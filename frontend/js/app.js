@@ -2,7 +2,7 @@
 "use strict";
 
 // ============================================================
-// EMOTIONAI - FRONTEND APPLICATION
+// EMOTISENSE - FRONTEND APPLICATION
 // CNN predictions remain connected to the existing FastAPI API.
 // MediaPipe is used only for the optional visual face overlay.
 // ============================================================
@@ -29,9 +29,19 @@ const removeImage = $("removeImage");
 
 const webcam = $("webcam");
 const captureCanvas = $("captureCanvas");
-const faceOverlay = $("faceOverlay");
+const faceOverlay = document.createElement("canvas");
 const cameraPlaceholder = $("cameraPlaceholder");
 const overlayContext = faceOverlay.getContext("2d");
+
+// Attach the MediaPipe canvas directly above the mirrored webcam.
+// Landmark X coordinates are mirrored in drawLandmarkConnections(), so
+// the canvas itself must NOT be CSS-flipped.
+faceOverlay.id = "faceOverlay";
+faceOverlay.className = "face-overlay";
+faceOverlay.setAttribute("aria-hidden", "true");
+if (webcam && webcam.parentElement && !document.getElementById("faceOverlay")) {
+    webcam.insertAdjacentElement("afterend", faceOverlay);
+}
 
 const startCamera = $("startCamera");
 const stopCamera = $("stopCamera");
@@ -76,12 +86,16 @@ let sessionTimer = null;
 let sessionStartedAt = null;
 
 let cameraRequestInProgress = false;
+let cameraAbortController = null;
+let cameraSessionId = 0;
 let isAnalyzing = false;
 let sessionFrameCount = 0;
 
 let smoothedProbabilities = null;
 let lastFaceCoordinates = null;
+let smoothedLandmarks = null;
 
+const LANDMARK_SMOOTHING_ALPHA = 0.42;
 const SMOOTHING_ALPHA = 0.35;
 const CAMERA_INTERVAL = 1000;
 
@@ -139,137 +153,108 @@ const MESH_FRAME_INTERVAL = 1000 / 12;
 // DRAWING HELPERS FOR FACIAL LANDMARKS
 // ============================================================
 
-function drawLandmarkConnections(
-    landmarks,
-    connections,
-    width,
-    height,
-    color,
-    lineWidth,
-    alpha = 1
-) {
+// Map MediaPipe's normalized source-video coordinates into the exact
+// visible webcam viewport. This mirrors the X coordinate and applies the
+// same object-fit:cover crop as the video element.
+function landmarkToViewport(point, width, height) {
+    if (!point || !webcam.videoWidth || !webcam.videoHeight) return null;
 
+    const scale = Math.max(
+        width / webcam.videoWidth,
+        height / webcam.videoHeight
+    );
+    const renderedWidth = webcam.videoWidth * scale;
+    const renderedHeight = webcam.videoHeight * scale;
+    const cropX = (renderedWidth - width) / 2;
+    const cropY = (renderedHeight - height) / 2;
+
+    const sourceX = point.x * renderedWidth - cropX;
+    const sourceY = point.y * renderedHeight - cropY;
+
+    // The webcam preview is mirrored with CSS. Mirror the overlay coordinates
+    // here too, rather than applying a second CSS transform to the canvas.
+    return {
+        x: width - sourceX,
+        y: sourceY
+    };
+}
+
+function drawLandmarkConnections(
+    landmarks, connections, width, height, color, lineWidth, alpha = 1
+) {
     if (!connections || !connections.length) return;
 
     overlayContext.save();
-
     overlayContext.globalAlpha = alpha;
     overlayContext.strokeStyle = color;
     overlayContext.lineWidth = lineWidth;
     overlayContext.lineCap = "round";
     overlayContext.lineJoin = "round";
-
     overlayContext.shadowColor = color;
-    overlayContext.shadowBlur = 5;
-
+    overlayContext.shadowBlur = 2;
     overlayContext.beginPath();
 
     for (const connection of connections) {
-
-        const start = landmarks[connection.start];
-        const end = landmarks[connection.end];
-
+        const start = landmarkToViewport(landmarks[connection.start], width, height);
+        const end = landmarkToViewport(landmarks[connection.end], width, height);
         if (!start || !end) continue;
-
-        // Mirror X because the webcam preview is mirrored.
-        const startX = (1 - start.x) * width;
-        const startY = start.y * height;
-
-        const endX = (1 - end.x) * width;
-        const endY = end.y * height;
-
-        overlayContext.moveTo(startX, startY);
-        overlayContext.lineTo(endX, endY);
+        overlayContext.moveTo(start.x, start.y);
+        overlayContext.lineTo(end.x, end.y);
     }
 
     overlayContext.stroke();
     overlayContext.restore();
 }
 
-
-function drawLandmarkPoints(
-    landmarks,
-    width,
-    height
-) {
-
-    // Only selected points are highlighted.
-    // Avoid drawing every landmark to keep the face natural.
-
+function drawLandmarkPoints(landmarks, width, height) {
+    // Only key facial feature points are highlighted; no dense full-face mesh.
     const selectedPoints = [
-        33, 133, 159, 145,
-        362, 263, 386, 374,
-        1, 4, 5, 6,
-        61, 291, 13, 14,
-        70, 105, 107,
-        336, 334, 300,
-        10, 152, 234, 454
+        33, 133, 159, 145, 362, 263, 386, 374,
+        1, 4, 5, 6, 61, 291, 13, 14, 10, 152
     ];
 
     overlayContext.save();
-
     for (const index of selectedPoints) {
-
-        const point = landmarks[index];
-
+        const point = landmarkToViewport(landmarks[index], width, height);
         if (!point) continue;
 
-        const x = (1 - point.x) * width;
-        const y = point.y * height;
-
         overlayContext.beginPath();
-
-        overlayContext.arc(
-            x,
-            y,
-            Math.max(1.4, width * 0.0025),
-            0,
-            Math.PI * 2
-        );
-
-        overlayContext.fillStyle = "rgba(104, 255, 225, 0.9)";
-        overlayContext.shadowColor = "#55e8d1";
-        overlayContext.shadowBlur = 7;
-
+        overlayContext.arc(point.x, point.y, Math.max(1.15, width * 0.0018), 0, Math.PI * 2);
+        overlayContext.fillStyle = "rgba(83, 226, 207, 0.78)";
+        overlayContext.shadowColor = "#55d9cb";
+        overlayContext.shadowBlur = 3;
         overlayContext.fill();
     }
-
     overlayContext.restore();
 }
 
-
-// ============================================================
-// DRAW SUBTLE FULL-FACE SCAN
-// ============================================================
-
+// Draw a restrained facial landmark guide aligned to the visible webcam crop.
+// This is a visual tracking overlay only; the CNN still predicts emotion.
 function drawFacialOverlay(landmarks) {
+    if (!landmarks || !webcam.videoWidth || !webcam.videoHeight) return;
+
+    const frame = webcam.closest(".camera-frame");
+    if (!frame) return;
+
+    const width = Math.max(1, frame.clientWidth);
+    const height = Math.max(1, frame.clientHeight);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     if (
-        !landmarks ||
-        !webcam.videoWidth ||
-        !webcam.videoHeight
+        faceOverlay.width !== Math.round(width * dpr) ||
+        faceOverlay.height !== Math.round(height * dpr)
     ) {
-        return;
+        faceOverlay.width = Math.round(width * dpr);
+        faceOverlay.height = Math.round(height * dpr);
+        faceOverlay.style.width = "100%";
+        faceOverlay.style.height = "100%";
     }
 
-    const width = webcam.videoWidth;
-    const height = webcam.videoHeight;
-
-    if (
-        faceOverlay.width !== width ||
-        faceOverlay.height !== height
-    ) {
-        faceOverlay.width = width;
-        faceOverlay.height = height;
-    }
-
+    overlayContext.setTransform(dpr, 0, 0, dpr, 0, 0);
     overlayContext.clearRect(0, 0, width, height);
 
     const faceLandmarkerClass = window.__emotionFaceLandmarker;
-
-    if (!faceLandmarkerClass) {
-        return;
-    }
+    if (!faceLandmarkerClass) return;
 
     const {
         FACE_LANDMARKS_FACE_OVAL,
@@ -281,82 +266,40 @@ function drawFacialOverlay(landmarks) {
         FACE_LANDMARKS_NOSE
     } = faceLandmarkerClass;
 
-    const thinLine = Math.max(0.8, width * 0.0018);
-    const featureLine = Math.max(1, width * 0.0022);
+    const thinLine = Math.max(0.65, width * 0.0011);
+    const featureLine = Math.max(0.8, width * 0.00135);
 
-    // Full face boundary: subtle cyan outline.
+    // Outer contour only, with a soft low-opacity stroke.
     drawLandmarkConnections(
-        landmarks,
-        FACE_LANDMARKS_FACE_OVAL,
-        width,
-        height,
-        "#65f0d7",
-        featureLine,
-        0.75
+        landmarks, FACE_LANDMARKS_FACE_OVAL, width, height,
+        "#5ce1d0", featureLine, 0.52
     );
 
-    // Eye contours.
+    // Eyes and brows are emphasized gently so the tracking guide is readable
+    // without covering the person's face with a dense triangular mask.
     drawLandmarkConnections(
-        landmarks,
-        FACE_LANDMARKS_LEFT_EYE,
-        width,
-        height,
-        "#a8fff0",
-        featureLine,
-        0.82
+        landmarks, FACE_LANDMARKS_LEFT_EYE, width, height,
+        "#7de9dc", featureLine, 0.72
     );
-
     drawLandmarkConnections(
-        landmarks,
-        FACE_LANDMARKS_RIGHT_EYE,
-        width,
-        height,
-        "#a8fff0",
-        featureLine,
-        0.82
+        landmarks, FACE_LANDMARKS_RIGHT_EYE, width, height,
+        "#7de9dc", featureLine, 0.72
     );
-
-    // Eyebrows.
     drawLandmarkConnections(
-        landmarks,
-        FACE_LANDMARKS_LEFT_EYEBROW,
-        width,
-        height,
-        "#8cefe3",
-        thinLine,
-        0.55
+        landmarks, FACE_LANDMARKS_LEFT_EYEBROW, width, height,
+        "#78dacc", thinLine, 0.52
     );
-
     drawLandmarkConnections(
-        landmarks,
-        FACE_LANDMARKS_RIGHT_EYEBROW,
-        width,
-        height,
-        "#8cefe3",
-        thinLine,
-        0.55
+        landmarks, FACE_LANDMARKS_RIGHT_EYEBROW, width, height,
+        "#78dacc", thinLine, 0.52
     );
-
-    // Nose contour.
     drawLandmarkConnections(
-        landmarks,
-        FACE_LANDMARKS_NOSE,
-        width,
-        height,
-        "#75e8d9",
-        thinLine,
-        0.55
+        landmarks, FACE_LANDMARKS_NOSE, width, height,
+        "#72d9ce", thinLine, 0.38
     );
-
-    // Lip contour.
     drawLandmarkConnections(
-        landmarks,
-        FACE_LANDMARKS_LIPS,
-        width,
-        height,
-        "#a0f7e9",
-        featureLine,
-        0.72
+        landmarks, FACE_LANDMARKS_LIPS, width, height,
+        "#8de9dd", featureLine, 0.66
     );
 
     drawLandmarkPoints(landmarks, width, height);
@@ -418,17 +361,30 @@ function startFaceScannerLoop() {
                 result.faceLandmarks.length > 0
             ) {
 
-                // Draw only the first detected face.
-                drawFacialOverlay(
-                    result.faceLandmarks[0]
-                );
+                // Smooth landmark movement to reduce jitter while keeping
+                // the mesh attached to the current facial geometry.
+                const rawLandmarks = result.faceLandmarks[0];
+                if (!smoothedLandmarks || smoothedLandmarks.length !== rawLandmarks.length) {
+                    smoothedLandmarks = rawLandmarks.map(point => ({ ...point }));
+                } else {
+                    smoothedLandmarks = rawLandmarks.map((point, index) => {
+                        const previous = smoothedLandmarks[index];
+                        return {
+                            x: previous.x + (point.x - previous.x) * LANDMARK_SMOOTHING_ALPHA,
+                            y: previous.y + (point.y - previous.y) * LANDMARK_SMOOTHING_ALPHA,
+                            z: (previous.z || 0) + ((point.z || 0) - (previous.z || 0)) * LANDMARK_SMOOTHING_ALPHA
+                        };
+                    });
+                }
+                drawFacialOverlay(smoothedLandmarks);
 
                 trackingState.textContent = "Tracking";
-                trackingHint.textContent = "Facial landmarks active";
-                overlayStatus.textContent = "FACE TRACKING ACTIVE";
+                trackingHint.textContent = "Face mesh aligned to live landmarks";
+                overlayStatus.textContent = "FACE MESH ALIGNED";
 
             } else {
 
+                smoothedLandmarks = null;
                 clearFaceOverlay();
 
                 trackingState.textContent = "Searching";
@@ -583,6 +539,8 @@ async function initializeFaceScanner() {
 uploadTab.addEventListener("click", () => {
 
     stopWebcam();
+    resetPrediction();
+    hideError();
 
     uploadTab.classList.add("active");
     cameraTab.classList.remove("active");
@@ -599,6 +557,9 @@ uploadTab.addEventListener("click", () => {
 
 cameraTab.addEventListener("click", () => {
 
+    // Do not carry a previous uploaded-image result into webcam mode.
+    resetPrediction();
+    hideError();
     uploadTab.classList.remove("active");
     cameraTab.classList.add("active");
 
@@ -734,7 +695,8 @@ async function predictFile(file) {
             throw new Error("The server returned no prediction data.");
         }
 
-        displayPrediction(data.prediction);
+        smoothedProbabilities = null;
+        displayPrediction(normalizePrediction(data.prediction));
 
     } catch (error) {
 
@@ -751,48 +713,78 @@ async function predictFile(file) {
 // PREDICTION SMOOTHING
 // ============================================================
 
-function smoothPrediction(prediction) {
-
-    const probabilities = prediction.probabilities;
-
-    if (!probabilities) {
-        return prediction;
+function normalizePrediction(prediction) {
+    if (!prediction || typeof prediction !== "object") {
+        throw new Error("The server returned an invalid prediction.");
     }
 
-    if (smoothedProbabilities === null) {
+    const raw = prediction.probabilities;
+    if (!raw || typeof raw !== "object") return { ...prediction };
 
-        smoothedProbabilities = { ...probabilities };
+    const values = {};
+    emotionOrder.forEach(name => {
+        const value = Number(raw[name] ?? 0);
+        values[name] = Number.isFinite(value) && value > 0 ? value : 0;
+    });
 
-    } else {
-
-        Object.keys(probabilities).forEach(emotion => {
-
-            smoothedProbabilities[emotion] =
-                SMOOTHING_ALPHA * probabilities[emotion] +
-                (1 - SMOOTHING_ALPHA) *
-                smoothedProbabilities[emotion];
-
-        });
+    // Accept either fractional probabilities (0–1) or percentages (0–100).
+    const total = Object.values(values).reduce((sum, value) => sum + value, 0);
+    if (total > 1.5) {
+        Object.keys(values).forEach(name => { values[name] /= 100; });
     }
 
-    const [predictedEmotion, predictedProbability] =
-        Object.entries(smoothedProbabilities).reduce(
-            (best, current) =>
-                current[1] > best[1] ? current : best
-        );
+    const normalizedTotal = Object.values(values).reduce((sum, value) => sum + value, 0);
+    if (normalizedTotal > 0) {
+        Object.keys(values).forEach(name => { values[name] /= normalizedTotal; });
+    }
+
+    const top = Object.entries(values).sort((a, b) => b[1] - a[1])[0];
+    const fallbackConfidence = Number(prediction.confidence);
+    const confidence = Number.isFinite(fallbackConfidence)
+        ? (fallbackConfidence <= 1 ? fallbackConfidence * 100 : fallbackConfidence)
+        : (top ? top[1] * 100 : 0);
 
     return {
         ...prediction,
-        emotion: predictedEmotion,
-        confidence: Number(
-            (predictedProbability * 100).toFixed(2)
-        ),
-        probabilities: {
-            ...smoothedProbabilities
-        }
+        emotion: top && normalizedTotal > 0 ? top[0] : String(prediction.emotion || "neutral").toLowerCase(),
+        confidence: top && normalizedTotal > 0 ? Number((top[1] * 100).toFixed(2)) : confidence,
+        probabilities: values
     };
 }
 
+function smoothPrediction(prediction) {
+    const normalized = normalizePrediction(prediction);
+    const probabilities = normalized.probabilities;
+
+    if (!probabilities) return normalized;
+
+    if (smoothedProbabilities === null) {
+        smoothedProbabilities = { ...probabilities };
+    } else {
+        emotionOrder.forEach(emotion => {
+            smoothedProbabilities[emotion] =
+                SMOOTHING_ALPHA * (probabilities[emotion] || 0) +
+                (1 - SMOOTHING_ALPHA) * (smoothedProbabilities[emotion] || 0);
+        });
+    }
+
+    const total = Object.values(smoothedProbabilities).reduce((sum, value) => sum + value, 0);
+    if (total > 0) {
+        Object.keys(smoothedProbabilities).forEach(name => {
+            smoothedProbabilities[name] /= total;
+        });
+    }
+
+    const [predictedEmotion, predictedProbability] = Object.entries(smoothedProbabilities)
+        .reduce((best, current) => current[1] > best[1] ? current : best);
+
+    return {
+        ...normalized,
+        emotion: predictedEmotion,
+        confidence: Number((predictedProbability * 100).toFixed(2)),
+        probabilities: { ...smoothedProbabilities }
+    };
+}
 
 // ============================================================
 // START WEBCAM
@@ -803,90 +795,96 @@ startCamera.addEventListener("click", async () => {
     if (cameraStream) return;
 
     hideError();
+    resetPrediction();
 
     if (!navigator.mediaDevices?.getUserMedia) {
-
-        showError(
-            "Camera access is unavailable. Open the website through localhost or HTTPS."
-        );
-
+        showError("Camera access is unavailable. Open this page using localhost or HTTPS and allow camera permission.");
         return;
     }
 
     smoothedProbabilities = null;
     lastFaceCoordinates = null;
+    smoothedLandmarks = null;
     sessionFrameCount = 0;
+    cameraSessionId += 1;
 
     framesAnalyzed.textContent = "0";
     sessionState.textContent = "Starting";
-    sessionHint.textContent = "Connecting to camera";
+    sessionHint.textContent = "Requesting camera permission";
     trackingState.textContent = scannerReady ? "Ready" : "Loading";
-
+    trackingHint.textContent = "Preparing visual scanner";
+    cameraStatus.textContent = "Waiting for camera permission...";
+    overlayStatus.textContent = "CONNECTING CAMERA";
     clearFaceOverlay();
+    startCamera.disabled = true;
 
     try {
-
-        // Start the camera immediately.
-        // MediaPipe initialization happens separately.
-
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-
-            video: {
-                facingMode: "user",
-                width: { ideal: 640 },
-                height: { ideal: 480 }
-            },
-
-            audio: false
-        });
-
-        webcam.srcObject = cameraStream;
-
-        await webcam.play();
-
-        cameraPlaceholder.classList.add("hidden");
-
-        startCamera.disabled = true;
-        stopCamera.disabled = false;
-
-        sessionStartedAt = Date.now();
-
-        sessionState.textContent = "Active";
-        sessionHint.textContent = "Live camera analysis";
-        cameraStatus.textContent = "Camera active. Analysing facial expressions.";
-
-        cameraStatusLine.classList.add("is-active");
-        overlayStatus.textContent = "INITIALIZING FACE TRACKING";
-
-        startSessionClock();
-
-        // Start CNN inference without waiting for MediaPipe.
-        cameraTimer = setInterval(
-            captureAndPredict,
-            CAMERA_INTERVAL
-        );
-
-        // Start the optional visual scanner if already initialized.
-        if (scannerReady) {
-            startFaceScannerLoop();
-        } else {
-            initializeFaceScanner();
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: "user" },
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    frameRate: { ideal: 24, max: 30 }
+                },
+                audio: false
+            });
+        } catch (preferredError) {
+            // Retry with browser defaults for webcams that reject ideal constraints.
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         }
 
+        // Release the stream if the user navigated away while permission was pending.
+        if (!document.getElementById("page-live-analysis")?.classList.contains("active")) {
+            stream.getTracks().forEach(track => track.stop());
+            startCamera.disabled = false;
+            return;
+        }
+
+        cameraStream = stream;
+        webcam.srcObject = stream;
+        webcam.muted = true;
+        webcam.playsInline = true;
+
+        await new Promise((resolve, reject) => {
+            if (webcam.readyState >= 1 && webcam.videoWidth > 0) return resolve();
+            const timeout = setTimeout(() => reject(new Error("Camera did not provide a video stream in time.")), 10000);
+            webcam.addEventListener("loadedmetadata", () => { clearTimeout(timeout); resolve(); }, { once: true });
+            webcam.addEventListener("error", () => { clearTimeout(timeout); reject(new Error("The browser could not read the camera stream.")); }, { once: true });
+        });
+
+        await webcam.play();
+        if (!webcam.videoWidth || !webcam.videoHeight) {
+            throw new Error("Camera started but no video frames are available. Check camera permission and try again.");
+        }
+
+        cameraPlaceholder.classList.add("hidden");
+        stopCamera.disabled = false;
+        sessionStartedAt = Date.now();
+        sessionState.textContent = "Active";
+        sessionHint.textContent = "Live camera analysis";
+        trackingState.textContent = scannerReady ? "Active" : "Starting";
+        trackingHint.textContent = scannerReady ? "Facial landmarks enabled" : "CNN analysis can run while scanner initializes";
+        cameraStatus.textContent = "Camera active. Looking for a face...";
+        cameraStatusLine.classList.add("is-active");
+        overlayStatus.textContent = "CAMERA ACTIVE";
+        startSessionClock();
+
+        // First inference immediately, then continue at the configured interval.
+        captureAndPredict();
+        cameraTimer = setInterval(captureAndPredict, CAMERA_INTERVAL);
+
+        if (scannerReady) startFaceScannerLoop();
+        else initializeFaceScanner();
+
     } catch (error) {
-
         console.error("Camera startup failed:", error);
-
         stopWebcam();
-
-        showError(
-            "Unable to access camera. Check browser permissions and ensure no other application is using it."
-        );
-
+        showError(error.message || "Unable to access camera. Check browser permissions and close other apps using the camera.");
         cameraStatus.textContent = "Camera could not be started.";
     }
 });
-
 
 // ============================================================
 // SESSION CLOCK
@@ -935,136 +933,89 @@ function stopSessionClock() {
 
 async function captureAndPredict() {
 
-    if (
-        !cameraStream ||
-        webcam.readyState < 2 ||
-        cameraRequestInProgress
-    ) {
-        return;
-    }
+    if (!cameraStream || webcam.readyState < 2 || !webcam.videoWidth || cameraRequestInProgress) return;
 
     cameraRequestInProgress = true;
+    const requestSessionId = cameraSessionId;
+    cameraAbortController = new AbortController();
 
     try {
-
         const context = captureCanvas.getContext("2d");
-
         captureCanvas.width = webcam.videoWidth;
         captureCanvas.height = webcam.videoHeight;
+        context.drawImage(webcam, 0, 0, captureCanvas.width, captureCanvas.height);
 
-        // IMPORTANT:
-        // Capture the original unmirrored frame.
-        // The face overlay is a separate visual layer.
-        // No scanner graphics are sent to the CNN.
-
-        context.drawImage(
-            webcam,
-            0,
-            0,
-            captureCanvas.width,
-            captureCanvas.height
-        );
-
-        const blob = await new Promise(resolve => {
-
-            captureCanvas.toBlob(
-                resolve,
-                "image/jpeg",
-                0.85
-            );
-
-        });
-
-        if (!blob) {
-            throw new Error("Could not capture camera frame.");
-        }
+        const blob = await new Promise(resolve => captureCanvas.toBlob(resolve, "image/jpeg", 0.88));
+        if (!blob) throw new Error("Could not capture a camera frame.");
+        if (requestSessionId !== cameraSessionId || !cameraStream) return;
 
         const formData = new FormData();
+        formData.append("file", blob, "webcam_frame.jpg");
 
-        formData.append(
-            "file",
-            blob,
-            "webcam_frame.jpg"
-        );
+        const response = await fetch(`${API_URL}/api/predict`, {
+            method: "POST",
+            body: formData,
+            signal: cameraAbortController.signal
+        });
+        const responseText = await response.text();
+        let data;
+        try {
+            data = responseText ? JSON.parse(responseText) : {};
+        } catch {
+            throw new Error("The prediction API returned an unreadable response. Check the FastAPI server logs.");
+        }
 
-        const response = await fetch(
-            `${API_URL}/api/predict`,
-            {
-                method: "POST",
-                body: formData
-            }
-        );
-
-        const data = await response.json();
+        // Ignore responses that arrive after Stop or a new camera session.
+        if (requestSessionId !== cameraSessionId || !cameraStream) return;
 
         if (!response.ok) {
-
             if (response.status === 422) {
-
                 clearFaceOverlay();
-
                 smoothedProbabilities = null;
                 lastFaceCoordinates = null;
-
-                cameraStatus.textContent =
-                    "No face detected. Adjust your position.";
-
+                resetPrediction();
+                cameraStatus.textContent = "No face detected. Move into the frame and improve lighting.";
                 faceDetectedTag.textContent = "● NOT DETECTED";
-                faceDetectedTag.style.color = "#ff7e8d";
-
+                faceDetectedTag.style.color = "#d95c70";
+                trackingState.textContent = "Searching";
+                trackingHint.textContent = "No face found in current frame";
                 return;
             }
-
-            throw new Error(
-                data.detail || "Camera prediction failed."
-            );
+            throw new Error(data.detail || "Camera prediction failed.");
         }
 
-        if (!data.prediction) {
-            throw new Error("The server returned no prediction data.");
+        const prediction = data.prediction || data.result || data;
+        if (!prediction || (!prediction.emotion && !prediction.probabilities)) {
+            throw new Error("The server response does not contain an emotion prediction.");
         }
 
-        const prediction = data.prediction;
-
-        // Face coordinates are retained for the information panel.
         lastFaceCoordinates = prediction.face_coordinates || null;
-
-        // Smooth CNN probabilities.
         const smoothedResult = smoothPrediction(prediction);
-
-        // Update result panel.
         displayPrediction(smoothedResult);
 
-        // Update session metrics.
         sessionFrameCount += 1;
-
-        framesAnalyzed.textContent =
-            sessionFrameCount.toLocaleString();
-
+        framesAnalyzed.textContent = sessionFrameCount.toLocaleString();
         sessionState.textContent = "Active";
         sessionHint.textContent = "Live camera analysis";
-
         faceDetectedTag.textContent = "● DETECTED";
-        faceDetectedTag.style.color = "#5ce1a0";
-
-        cameraStatus.textContent =
-            `Live prediction: ${smoothedResult.emotion} ` +
-            `(${smoothedResult.confidence}%)`;
+        faceDetectedTag.style.color = "#169b78";
+        trackingState.textContent = scannerReady ? "Tracking" : "Detected";
+        trackingHint.textContent = scannerReady ? "Facial landmarks active" : "CNN face detection active";
+        cameraStatus.textContent = `Live prediction: ${smoothedResult.emotion} (${smoothedResult.confidence}%)`;
 
     } catch (error) {
-
-        console.error("Prediction request failed:", error);
-
-        cameraStatus.textContent = "Prediction request failed.";
-
-        showError(error.message);
-
+        if (error.name !== "AbortError" && requestSessionId === cameraSessionId) {
+            console.error("Camera prediction failed:", error);
+            cameraStatus.textContent = "Prediction request failed. Check the backend connection.";
+            showError(error.message);
+        }
     } finally {
-
-        cameraRequestInProgress = false;
+        if (requestSessionId === cameraSessionId) {
+            cameraRequestInProgress = false;
+            cameraAbortController = null;
+        }
     }
 }
-
 
 // ============================================================
 // STOP WEBCAM
@@ -1074,6 +1025,13 @@ stopCamera.addEventListener("click", stopWebcam);
 
 
 function stopWebcam() {
+
+    cameraSessionId += 1;
+    if (cameraAbortController) {
+        cameraAbortController.abort();
+        cameraAbortController = null;
+    }
+    cameraRequestInProgress = false;
 
     if (cameraTimer) {
 
@@ -1102,8 +1060,11 @@ function stopWebcam() {
 
     smoothedProbabilities = null;
     lastFaceCoordinates = null;
-
-    cameraRequestInProgress = false;
+    smoothedLandmarks = null;
+    sessionFrameCount = 0;
+    framesAnalyzed.textContent = "0";
+    resetPrediction();
+    hideError();
 
     clearFaceOverlay();
 
@@ -1644,7 +1605,7 @@ function generateAnalysisReport() {
     const reportDate = new Date().toLocaleString();
 
     const reportLines = [
-        "EMOTIONAI - FACIAL EMOTION ANALYSIS REPORT",
+        "EMOTISENSE - FACIAL EMOTION ANALYSIS REPORT",
         "==========================================",
         "",
         `Generated: ${reportDate}`,
@@ -1763,7 +1724,7 @@ function downloadAnalysisReport() {
 
     link.href = url;
     link.download =
-        `EmotionAI_Report_${Date.now()}.txt`;
+        `EmotiSense_Report_${Date.now()}.txt`;
 
     document.body.appendChild(link);
 
@@ -1871,7 +1832,7 @@ document.addEventListener("keydown", event => {
 window.addEventListener("load", () => {
 
     console.info(
-        "%cEmotionAI Premium Dashboard",
+        "%cEmotiSense Premium Dashboard",
         "color:#54e3d0;font-size:16px;font-weight:bold;"
     );
 
@@ -1879,3 +1840,205 @@ window.addEventListener("load", () => {
         "Interactive dashboard enhancements initialized."
     );
 });
+
+
+
+// ============================================================
+// SINGLE-PAGE SECTION NAVIGATION
+// Each top navigation item opens its own full page-like section.
+// The analysis controls remain mounted so existing camera/API logic works.
+// ============================================================
+(() => {
+  const navButtons = [...document.querySelectorAll(".main-navigation [data-page]")];
+  const views = [...document.querySelectorAll(".page-view[data-view]")];
+  function activatePage(name, updateHistory = true) {
+    const target = views.find(view => view.dataset.view === name);
+    if (!target) return;
+    if (name !== "live-analysis" && typeof stopWebcam === "function" && cameraStream) {
+      stopWebcam();
+    }
+    views.forEach(view => {
+      const active = view === target;
+      view.classList.toggle("active", active);
+      view.setAttribute("aria-hidden", String(!active));
+    });
+    navButtons.forEach(button => {
+      const active = button.dataset.page === name;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-current", active ? "page" : "false");
+    });
+    if (updateHistory) {
+      try { history.replaceState(null, "", `#${name}`); } catch (_) {}
+    }
+    window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }
+  navButtons.forEach(button => button.addEventListener("click", () => activatePage(button.dataset.page)));
+  const initial = location.hash.replace("#", "");
+  activatePage(views.some(v => v.dataset.view === initial) ? initial : "overview", false);
+  window.addEventListener("hashchange", () => {
+    const page = location.hash.replace("#", "");
+    if (views.some(v => v.dataset.view === page)) activatePage(page, false);
+  });
+})();
+
+// ============================================================
+// EMOTISENSE INTRO — ABSTRACT NEURAL NETWORK
+// Deliberately contains no face portrait, facial mesh or scan illustration.
+// The percentage is a short visual welcome sequence, not model-load progress.
+// ============================================================
+(() => {
+    const intro = document.getElementById("emotion3DIntro");
+    const canvas = document.getElementById("networkCanvas");
+    if (!intro || !canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) { intro.remove(); return; }
+
+    const percent = document.getElementById("launchPercent");
+    const bar = document.getElementById("launchProgress");
+    const status = document.getElementById("launchStatus");
+    const message = document.getElementById("launchMessage");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const palette = ["#55a4ee", "#20b9b0", "#8b9cf2", "#b7d9ff"];
+    let width = 1, height = 1, raf = 0, closed = false, start = 0, points = [];
+
+    function resize() {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = Math.max(1, rect.width);
+        height = Math.max(1, rect.height);
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        const cols = Math.max(6, Math.min(11, Math.round(width / 75)));
+        const rows = Math.max(4, Math.min(7, Math.round(height / 65)));
+        points = [];
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                points.push({
+                    x: width * (0.12 + (c / Math.max(1, cols - 1)) * 0.76),
+                    y: height * (0.14 + (r / Math.max(1, rows - 1)) * 0.72),
+                    phase: Math.random() * Math.PI * 2,
+                    color: palette[(r + c) % palette.length]
+                });
+            }
+        }
+    }
+
+    function draw(time) {
+        if (closed) return;
+        ctx.clearRect(0, 0, width, height);
+
+        const centerX = width / 2, centerY = height / 2;
+        const pulse = 0.5 + 0.5 * Math.sin(time * 0.0015);
+        const glow = ctx.createRadialGradient(centerX, centerY, 8, centerX, centerY, Math.max(width, height) * 0.48);
+        glow.addColorStop(0, "rgba(47, 142, 218, 0.16)");
+        glow.addColorStop(1, "rgba(47, 142, 218, 0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, width, height);
+
+        const moved = points.map(p => ({
+            x: p.x + Math.sin(time * 0.00055 + p.phase) * 7,
+            y: p.y + Math.cos(time * 0.00065 + p.phase) * 7,
+            color: p.color
+        }));
+
+        // Connect nearby nodes to form an abstract neural network.
+        moved.forEach((p, i) => {
+            for (let j = i + 1; j < moved.length; j++) {
+                const q = moved[j];
+                const dx = p.x - q.x, dy = p.y - q.y;
+                const distance = Math.hypot(dx, dy);
+                if (distance < Math.min(width, height) * 0.24) {
+                    ctx.strokeStyle = `rgba(105, 177, 231, ${0.16 * (1 - distance / (Math.min(width, height) * 0.24))})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+                }
+            }
+        });
+
+        moved.forEach((p, i) => {
+            const radius = 2.1 + (i % 5 === 0 ? pulse * 2 : 0);
+            ctx.beginPath(); ctx.arc(p.x, p.y, radius + 5, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(51, 157, 218, 0.08)"; ctx.fill();
+            ctx.beginPath(); ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = p.color; ctx.fill();
+        });
+
+        // Central processing node.
+        const ringRadius = Math.min(width, height) * (0.105 + pulse * 0.008);
+        ctx.beginPath(); ctx.arc(centerX, centerY, ringRadius + 13, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(92, 179, 231, 0.22)"; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.beginPath(); ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(35, 183, 177, 0.8)"; ctx.lineWidth = 2; ctx.stroke();
+        ctx.beginPath(); ctx.arc(centerX, centerY, ringRadius * 0.58, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(52, 132, 207, 0.16)"; ctx.fill();
+        ctx.fillStyle = "#eaf5ff";
+        ctx.font = `600 ${Math.max(13, Math.min(19, width * 0.025))}px 'DM Sans', sans-serif`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("AI", centerX, centerY);
+
+        if (!reduced) raf = requestAnimationFrame(draw);
+    }
+
+    const stages = [
+        [0, "PREPARING EXPERIENCE", "Preparing your EmotiSense workspace..."],
+        [28, "CONNECTING THE NETWORK", "Establishing visual network connections..."],
+        [58, "ACTIVATING AI WORKSPACE", "Bringing the interface online..."],
+        [84, "FINALIZING EXPERIENCE", "Almost ready..."],
+        [100, "WELCOME TO EMOTISENSE", "Your workspace is ready."]
+    ];
+
+    function setProgress(value) {
+        if (percent) percent.textContent = `${String(value).padStart(2, "0")}%`;
+        if (bar) bar.style.width = `${value}%`;
+        const stage = [...stages].reverse().find(item => value >= item[0]);
+        if (stage) {
+            if (status) status.textContent = stage[1];
+            if (message) message.textContent = stage[2];
+        }
+    }
+
+    function closeIntro() {
+        if (closed) return;
+        closed = true;
+        if (raf) cancelAnimationFrame(raf);
+        intro.classList.add("is-closing");
+        window.setTimeout(() => {
+            intro.remove();
+            window.dispatchEvent(new Event("emotion-intro-closed"));
+        }, reduced ? 0 : 650);
+    }
+
+    resize();
+    window.addEventListener("resize", resize, { passive: true });
+    if (reduced) {
+        setProgress(100);
+        draw(0);
+        closeIntro();
+        return;
+    }
+
+    raf = requestAnimationFrame(draw);
+    start = performance.now();
+    function progressFrame(now) {
+        if (closed) return;
+        const ratio = Math.min(1, (now - start) / 3000);
+        setProgress(Math.round((1 - Math.pow(1 - ratio, 2)) * 100));
+        if (ratio < 1) requestAnimationFrame(progressFrame);
+        else window.setTimeout(closeIntro, 350);
+    }
+    requestAnimationFrame(progressFrame);
+})();
+
+// Pointer-following sheen for cards (decorative only).
+document.addEventListener("pointermove", event => {
+    const card = event.target.closest(
+        ".metric-card,.panel,.info-card,.wide-card,.overview-intro-band,.tech-card,.goal-card,.team-card,.contact-card"
+    );
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    card.style.setProperty("--shine-x", `${event.clientX - rect.left}px`);
+    card.style.setProperty("--shine-y", `${event.clientY - rect.top}px`);
+}, { passive: true });

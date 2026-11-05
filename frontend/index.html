@@ -1,105 +1,82 @@
-
 <!DOCTYPE html>
-<html lang="en" class="emotion-intro-pending">
-
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#080d19">
-
-    <meta name="description"
-          content="AI-Based Human Emotion Recognition and AR Intelligence Platform">
-
-    <title>EmotionAI | Intelligent Emotion Analysis</title>
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-          rel="stylesheet">
-
-    <!-- Existing Dashboard Styles -->
-    <link rel="stylesheet" href="css/style.css">
-
-    <!-- New Three.js Welcome Screen Styles -->
-    <link rel="stylesheet" href="css/welcome-3d.css">
-
-    <!-- Prevent dashboard flash before the cinematic intro is mounted -->
-    <style>
-        html.emotion-intro-pending,
-        html.emotion-intro-pending body {
-            min-height: 100%;
-            background: #030914;
-        }
-        html.emotion-intro-pending body > .app-shell {
-            visibility: hidden !important;
-        }
-    </style>
-
-    <!-- Three.js Import Map -->
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-        }
-    }
-    </script>
-
-    <!-- Existing Dashboard JavaScript -->
-    <script src="js/app.js" defer></script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f8ff">
+  <meta name="description" content="EmotiSense — Emotional Intelligence powered by deep learning and computer vision">
+  <title>EmotiSense | Emotional Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js" defer></script>
 </head>
-
 <body>
+<section class="launch-screen" id="emotion3DIntro" aria-label="EmotiSense startup animation">
+  <div class="launch-top">
+    <a class="brand" href="#"><span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" role="img" aria-label="">
+          <circle cx="20" cy="20" r="12.5" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="20" cy="20" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M20 3v5M20 32v5M3 20h5M32 20h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="20" cy="20" r="2.2" fill="#fff"/>
+        </svg>
+      </span><span class="brand-name">Emoti<span>Sense</span></span></a>
+    <span class="launch-edition">AI INTELLIGENCE PLATFORM · 2026</span>
+  </div>
+  <div class="launch-content">
+    <div class="launch-visual">
+      <div class="signal-orbit signal-orbit-a"></div>
+      <div class="signal-orbit signal-orbit-b"></div>
+      <div class="signal-card">
+        <div class="signal-card-head"><span>NEURAL NETWORK VISUALIZATION</span><span class="live-dot">● SYSTEM ONLINE</span></div>
+        <canvas id="networkCanvas" aria-label="Abstract animated neural network visualization"></canvas>
+        <div class="signal-card-foot"><span>NEURAL NETWORK</span><span>AI VISION</span></div>
+      </div>
+      <div class="signal-chip signal-chip-one"><span>✦</span> AI PROCESSING</div>
+      <div class="signal-chip signal-chip-two"><span>◎</span> EMOTION CLASSIFICATION</div>
+    </div>
+    <div class="launch-copy">
+      <div class="launch-eyebrow"><span></span> EMOTIONAL INTELLIGENCE</div>
+      <h1>Emotional<br><span>Intelligence.</span></h1>
+      <p>A focused facial-expression recognition platform powered by deep learning and computer vision.</p>
+      <div class="launch-features"><div><b>01</b> Facial Analysis</div><div><b>02</b> Seven Emotion Classes</div><div><b>03</b> Interactive AI Experiences</div></div>
+      <div class="launch-loader">
+        <div class="loader-heading"><span id="launchStatus">PREPARING EXPERIENCE</span><strong id="launchPercent">01%</strong></div>
+        <div class="loader-track"><div id="launchProgress"></div></div>
+        <div class="loader-footer"><span id="launchMessage">Building the visual experience...</span><span>PLEASE WAIT</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="launch-bottom"><span>AI-BASED HUMAN EMOTION RECOGNITION</span><span>DEEP LEARNING · COMPUTER VISION</span></div>
+</section>
 
-    <!-- ==========================================
-         EXISTING EMOTION AI DASHBOARD
-    =========================================== -->
+<div class="app-shell">
+<header class="topbar">
+  <a class="brand" href="#" aria-label="EmotiSense home"><span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" role="img" aria-label="">
+          <circle cx="20" cy="20" r="12.5" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="20" cy="20" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M20 3v5M20 32v5M3 20h5M32 20h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="20" cy="20" r="2.2" fill="#fff"/>
+        </svg>
+      </span><span class="brand-name">Emoti<span>Sense</span></span><span class="brand-divider"></span><span class="brand-product">INTELLIGENCE PLATFORM</span></a>
+  <nav class="main-navigation" aria-label="Main navigation">
+    <button class="nav-link active" data-page="overview">Overview</button>
+    <button class="nav-link" data-page="live-analysis">Live Analysis</button>
+    <button class="nav-link" data-page="goals">Goals</button>
+    <button class="nav-link" data-page="technology">Technology</button>
+    <button class="nav-link" data-page="team">Team</button>
+    <button class="nav-link" data-page="contact">Contact</button>
+  </nav>
+  <div class="topbar-right"><span class="system-indicator"><i class="status-dot"></i><span id="systemStatus">System ready</span></span><span class="version-tag">CUSTOM CNN · V1.0</span></div>
+</header>
 
-    <div class="app-shell">
-
-        <!-- HEADER -->
-        <header class="topbar">
-
-            <a class="brand" href="#">
-
-                <span class="brand-mark">E</span>
-
-                <span class="brand-name">
-                    Emotion<span>AI</span>
-                </span>
-
-                <span class="brand-divider"></span>
-
-                <span class="brand-product">
-                    INTELLIGENCE PLATFORM
-                </span>
-
-            </a>
-
-            <div class="topbar-right">
-
-                <span class="system-indicator">
-                    <i class="status-dot"></i>
-                    <span id="systemStatus">System ready</span>
-                </span>
-
-                <span class="version-tag">
-                    CNN MODEL · V1.0
-                </span>
-
-            </div>
-
-        </header>
-
-
-        <!-- MAIN CONTENT -->
-        <main class="main-content">
-
+<main class="main-content">
+  <section class="page-view active" id="page-overview" data-view="overview">
             <!-- HERO SECTION -->
-            <section class="hero">
+            <section class="hero" id="overview">
 
                 <div class="eyebrow">
                     <span></span>
@@ -141,9 +118,46 @@
                 </div>
 
             </section>
+<div class="overview-intro-band">
+      <div class="overview-band-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="38" height="38" aria-hidden="true">
+          <circle cx="24" cy="24" r="15" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="24" cy="24" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M24 3v7M24 38v7M3 24h7M38 24h7M9 9l5 5M34 34l5 5M39 9l-5 5M14 34l-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="overview-band-copy">
+        <span class="section-kicker">PROJECT OVERVIEW</span>
+        <h2>Understand facial expressions with AI</h2>
+        <p>EmotiSense analyses a facial image or live camera frame and estimates one of seven expression classes using a trained Custom CNN.</p>
+      </div>
+      <div class="overview-band-stat"><strong>07</strong><span>Expression classes</span></div>
+      <div class="overview-band-stat"><strong>CNN</strong><span>Recognition model</span></div>
+    </div>
+    <div class="overview-grid overview-grid-compact">
+      <article class="info-card overview-feature">
+        <span class="section-kicker">01 / WORKFLOW</span>
+        <h2>From image to insight</h2>
+        <ol class="overview-steps">
+          <li><b>01</b><span><strong>Capture</strong> — upload an image or use the webcam.</span></li>
+          <li><b>02</b><span><strong>Analyse</strong> — detect and prepare the face.</span></li>
+          <li><b>03</b><span><strong>Predict</strong> — the CNN estimates seven expression classes.</span></li>
+          <li><b>04</b><span><strong>Review</strong> — view confidence and class probabilities.</span></li>
+        </ol>
+      </article>
+      <article class="info-card overview-feature">
+        <span class="section-kicker">02 / TECHNOLOGY</span>
+        <h2>Built with computer vision and deep learning</h2>
+        <p>Python, TensorFlow/Keras, FastAPI and OpenCV power the recognition workflow. MediaPipe provides the optional live facial-landmark overlay. Unity and Blender support the wider AR-avatar direction.</p>
+        <div class="highlight-pills"><span>Custom CNN</span><span>FER2013</span><span>FastAPI</span><span>OpenCV</span><span>MediaPipe</span><span>Unity · Blender</span></div>
+      </article>
+    </div>
+    <p class="overview-note overview-disclaimer">Predictions describe visual expression patterns only. They are not a measure of a person's actual feelings or mental state.</p>
+  </section>
 
-
-            <!-- SESSION METRICS -->
+  <section class="page-view" id="page-live-analysis" data-view="live-analysis">
+    <div class="page-heading"><span class="section-kicker">01 / INTERACTIVE WORKSPACE</span><h1>Live <span>Analysis</span></h1><p>Upload a facial image or activate your webcam to run an emotion prediction with the connected model.</p></div>
+<!-- SESSION METRICS -->
             <section class="metric-grid" aria-label="Session metrics">
 
                 <article class="metric-card">
@@ -219,10 +233,8 @@
                 </article>
 
             </section>
-
-
             <!-- MAIN WORKSPACE -->
-            <section class="workspace">
+            <section class="workspace" id="workspace">
 
                 <!-- INPUT PANEL -->
                 <article class="panel analysis-panel">
@@ -365,14 +377,7 @@
                                    playsinline
                                    muted>
                             </video>
-
-                            <!-- Existing MediaPipe Facial Mesh Overlay -->
-                            <canvas id="faceOverlay"
-                                    class="face-overlay">
-                            </canvas>
-
-
-                            <div class="camera-placeholder"
+<div class="camera-placeholder"
                                  id="cameraPlaceholder">
 
                                 <div class="placeholder-icon">◎</div>
@@ -394,7 +399,7 @@
 
                             <div class="camera-overlay-label">
                                 <i></i>
-                                AI FACE TRACKING
+                                LIVE CAMERA
                             </div>
 
 
@@ -647,8 +652,25 @@
             </section>
 
 
+
+    <div class="disclaimer"><span>ⓘ</span><p>Emotion predictions are model-based estimates from facial expressions. They should not be treated as definitive measurements of a person's internal emotional state.</p></div>
+  </section>
+
+  <section class="page-view" id="page-goals" data-view="goals">
+    <div class="page-heading"><span class="section-kicker">02 / PROJECT DIRECTION</span><h1>Goals &amp; <span>Vision</span></h1><p>The purpose, intended outcomes and future direction of the AI-Based Human Emotion Recognition with AR Avatar project.</p></div>
+    <div class="cards-grid">
+      <article class="info-card"><div class="card-icon">◎</div><span class="section-kicker">01 / CORE OBJECTIVE</span><h2>Recognize facial expressions</h2><p>Build a deep-learning system that classifies facial images into seven expression categories: angry, disgust, fear, happy, neutral, sad and surprise.</p></article>
+      <article class="info-card"><div class="card-icon">⌁</div><span class="section-kicker">02 / REAL-TIME EXPERIENCE</span><h2>Interactive analysis</h2><p>Provide image upload and webcam-based analysis with visual feedback, confidence scores and class probability distribution.</p></article>
+      <article class="info-card"><div class="card-icon">✧</div><span class="section-kicker">03 / AR AVATAR</span><h2>Connect AI with AR</h2><p>Explore how predicted facial expressions can be represented through an animated avatar and augmented-reality experience.</p></article>
+      <article class="info-card"><div class="card-icon">◇</div><span class="section-kicker">04 / LEARNING OUTCOME</span><h2>Integrate technologies</h2><p>Bring together machine learning, computer vision, backend development and 3D/AR tools in a single academic project.</p></article>
+    </div>
+    <article class="wide-card"><span class="section-kicker">PROJECT VISION</span><h2>From recognition to an interactive experience</h2><p>Develop a connected platform where facial-expression classification can become an input for engaging visual and avatar-based experiences. The project treats model outputs as estimates, not as definitive statements about a person's feelings.</p></article>
+  </section>
+
+  <section class="page-view" id="page-technology" data-view="technology">
+    <div class="page-heading"><span class="section-kicker">03 / ENGINEERING &amp; IMPLEMENTATION</span><h1>Technology <span>Stack</span></h1><p>Tools and components used in the current emotion-recognition workflow and the planned avatar experience.</p></div>
             <!-- LOWER DASHBOARD SECTIONS -->
-            <section class="lower-grid">
+            <section class="lower-grid" id="technology">
 
                 <!-- ANALYSIS PIPELINE -->
                 <article class="panel process-panel">
@@ -829,47 +851,53 @@
             </section>
 
 
-            <!-- DISCLAIMER -->
-            <section class="disclaimer">
-
-                <span>ⓘ</span>
-
-                <p>
-                    Emotion predictions are model-based estimates from facial
-                    expressions. They should not be treated as definitive
-                    measurements of a person's internal emotional state.
-                </p>
-
-            </section>
-
-        </main>
 
 
-        <!-- FOOTER -->
-        <footer class="footer">
-
-            <div class="footer-brand">
-                Emotion<span>AI</span>
-            </div>
-
-            <p>
-                AI-Based Human Emotion Recognition with AR Avatar
-            </p>
-
-            <span>
-                POWERED BY DEEP LEARNING & COMPUTER VISION
-            </span>
-
-        </footer>
-
+    <div class="cards-grid tech-extra">
+      <article class="info-card"><div class="card-icon">⌘</div><span class="section-kicker">DEEP LEARNING</span><h2>Custom CNN</h2><p>The trained convolutional neural network produces the seven-class emotion probability distribution used by the application.</p></article>
+      <article class="info-card"><div class="card-icon">◉</div><span class="section-kicker">COMPUTER VISION</span><h2>OpenCV &amp; MediaPipe</h2><p>OpenCV supports face-region processing. The webcam preview stays unobstructed; face-presence tracking can run independently of the displayed camera image.</p></article>
+      <article class="info-card"><div class="card-icon">▣</div><span class="section-kicker">BACKEND</span><h2>FastAPI</h2><p>The frontend sends image input to the backend prediction endpoint and displays the returned classification results.</p></article>
+      <article class="info-card"><div class="card-icon">✧</div><span class="section-kicker">3D &amp; AR EXTENSION</span><h2>Unity &amp; Blender</h2><p>Unity is intended for interactive 3D/AR experiences, while Blender can be used to create and prepare avatar models and 3D assets.</p></article>
     </div>
+  </section>
 
+  <section class="page-view" id="page-team" data-view="team">
+    <div class="page-heading"><span class="section-kicker">04 / PEOPLE BEHIND THE PROJECT</span><h1>Meet the <span>Team</span></h1><p>A collaborative student project focused on AI, deep learning, computer vision and augmented reality.</p></div>
+    <div class="team-grid">
+      <article class="team-member team-lead"><div class="member-avatar">KG</div><div><span class="member-role">PROJECT LEADER</span><h2>Khadergouse Savanur</h2><p>Project coordination, development and integration.</p></div><span class="lead-chip">TEAM LEAD</span></article>
+      <article class="team-member"><div class="member-avatar">MM</div><div><span class="member-role">TEAM MEMBER</span><h2>Maqsood MD</h2><p>Project team member.</p></div></article>
+      <article class="team-member"><div class="member-avatar">JK</div><div><span class="member-role">TEAM MEMBER</span><h2>Mohammad Junaid Kotwal</h2><p>Project team member.</p></div></article>
+      <article class="team-member"><div class="member-avatar">RG</div><div><span class="member-role">TEAM MEMBER</span><h2>Rayyan G T</h2><p>Project team member.</p></div></article>
+      <article class="team-member"><div class="member-avatar">AP</div><div><span class="member-role">TEAM MEMBER</span><h2>Afsankhan Pathan</h2><p>Project team member.</p></div></article>
+    </div>
+  </section>
 
-    <!-- ==========================================
-         THREE.JS CINEMATIC WELCOME EXPERIENCE
-    =========================================== -->
+  <section class="page-view" id="page-contact" data-view="contact">
+    <div class="page-heading"><span class="section-kicker">05 / GET IN TOUCH</span><h1>Contact <span>Us</span></h1><p>For project demonstrations, academic discussions or enquiries, use the contact details below.</p></div>
+    <div class="contact-layout">
+      <article class="contact-card"><span class="section-kicker">PROJECT ENQUIRIES</span><h2>Let's connect</h2><p>Reach out to the project developer for information about the AI-Based Human Emotion Recognition with AR Avatar project.</p>
+        <div class="contact-detail"><span class="contact-icon">♙</span><div><small>NAME</small><strong>Khadergouse Savanur</strong><em>Project Developer</em></div></div>
+        <a class="contact-detail contact-action" href="tel:7353625114"><span class="contact-icon">☎</span><div><small>PHONE</small><strong>7353625114</strong><em>Tap to call</em></div></a>
+        <a class="contact-detail contact-action" href="mailto:khadergous12@gmail.com"><span class="contact-icon">✉</span><div><small>EMAIL ADDRESS</small><strong>khadergous12@gmail.com</strong><em>Tap to send an email</em></div></a>
+      </article>
+      <aside class="contact-side contact-note-card">
+        <div class="contact-note-icon" aria-hidden="true"><span>✉</span></div>
+        <span class="section-kicker">PROJECT ENQUIRIES</span>
+        <h2>Have a question?</h2>
+        <p>For a project demonstration, technical discussion or academic enquiry, contact the developer using the details on this page.</p>
+        <div class="contact-note-points"><span>✓ Project information</span><span>✓ Demonstration enquiries</span><span>✓ Academic discussion</span></div>
+      </aside>
+    </div>
+  </section>
 
-    <script type="module" src="js/welcome-3d.js"></script>
-
+</main>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">Emoti<span>Sense</span></div>
+    <p>AI-Based Human Emotion Recognition with AR Avatar</p>
+    <small>POWERED BY DEEP LEARNING · COMPUTER VISION</small>
+  </div>
+</footer>
+</div>
 </body>
 </html>
