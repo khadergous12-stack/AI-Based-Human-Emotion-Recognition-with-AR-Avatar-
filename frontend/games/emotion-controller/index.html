@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#08152d">
+  <title>Neon Runner | Emotion Controller</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+
+  <!-- WELCOME -->
+  <main id="welcomeScreen" class="screen welcome-screen">
+    <div class="welcome-card">
+      <div class="brand-mark">EC</div>
+      <p class="eyebrow">AI POWERED ARCADE EXPERIENCE</p>
+      <h1>NEON <span>RUNNER</span></h1>
+      <p class="welcome-copy">Your expressions. Your controls. Your adventure.</p>
+      <label class="field-label" for="playerName">ENTER YOUR PLAYER NAME</label>
+      <input id="playerName" class="name-input" maxlength="18" autocomplete="nickname" placeholder="Your name">
+      <button id="enterGameBtn" class="btn btn-primary btn-wide">ENTER THE ARCADE <span>→</span></button>
+      <div class="welcome-foot">AI-Based Human Emotion Recognition with AR Avatar</div>
+    </div>
+  </main>
+
+  <!-- MAIN MENU -->
+  <main id="mainMenuScreen" class="screen menu-screen hidden">
+    <header class="menu-top">
+      <div class="brand">EMOTION<span> CONTROLLER</span></div>
+      <div class="player-chip">PLAYER <strong id="menuPlayerName">PLAYER</strong></div>
+    </header>
+    <section class="menu-content">
+      <div class="menu-copy">
+        <p class="eyebrow">WELCOME TO THE ARENA</p>
+        <h1>Ready to<br><span>run, player?</span></h1>
+        <p>Control your runner using real-time facial emotion recognition. Stay expressive, react quickly and beat your best score.</p>
+        <div class="menu-highlights">
+          <span>✦ 7 facial expressions</span><span>✦ 3 difficulty modes</span><span>✦ Camera-powered controls</span>
+        </div>
+      </div>
+      <nav class="menu-actions" aria-label="Main menu">
+        <button id="menuStartBtn" class="menu-action featured"><span class="menu-action-icon">▶</span><span><strong>Start Game</strong><small>Choose a level and begin</small></span><b>→</b></button>
+        <button id="menuResumeBtn" class="menu-action" disabled><span class="menu-action-icon">Ⅱ</span><span><strong>Resume</strong><small>Continue your paused run</small></span><b>→</b></button>
+        <button id="menuLevelsBtn" class="menu-action"><span class="menu-action-icon">▦</span><span><strong>Levels</strong><small>Choose your starting challenge</small></span><b>→</b></button>
+        <button id="menuSettingsBtn" class="menu-action"><span class="menu-action-icon">⚙</span><span><strong>Settings</strong><small>Difficulty and game preferences</small></span><b>→</b></button>
+        <a class="menu-action exit-action" href="../../index.html"><span class="menu-action-icon">↗</span><span><strong>Exit</strong><small>Back to Emotion AI dashboard</small></span><b>→</b></a>
+      </nav>
+    </section>
+    <footer class="menu-footer">NEON RUNNER <span>•</span> EMOTION CONTROLLED ARCADE</footer>
+  </main>
+
+  <!-- LEVEL SELECT -->
+  <main id="levelsScreen" class="screen sub-screen hidden">
+    <header class="sub-top"><button class="text-button" data-back-menu>← Main menu</button><div class="brand">SELECT <span>LEVEL</span></div><span class="top-tag">CHOOSE YOUR CHALLENGE</span></header>
+    <section class="sub-content">
+      <p class="eyebrow">YOUR ADVENTURE STARTS HERE</p>
+      <h1>Choose your <span>starting level</span></h1>
+      <p class="sub-copy">Higher levels begin with faster obstacles. You can continue progressing as you score points.</p>
+      <div class="level-grid">
+        <button class="level-card selected" data-level="1"><span class="level-number">01</span><strong>First Steps</strong><small>Warm up and learn the controls</small><em>START HERE</em></button>
+        <button class="level-card" data-level="2"><span class="level-number">02</span><strong>Getting Faster</strong><small>A little more speed and pressure</small><em>LEVEL 02</em></button>
+        <button class="level-card" data-level="3"><span class="level-number">03</span><strong>Quick Reflexes</strong><small>Sharper timing required</small><em>LEVEL 03</em></button>
+        <button class="level-card" data-level="4"><span class="level-number">04</span><strong>Pro Runner</strong><small>Fast obstacles, stay focused</small><em>LEVEL 04</em></button>
+        <button class="level-card" data-level="5"><span class="level-number">05</span><strong>Neon Master</strong><small>The ultimate starting challenge</small><em>LEVEL 05</em></button>
+      </div>
+      <div class="sub-actions"><button id="confirmLevelBtn" class="btn btn-primary">CONTINUE TO GAME →</button></div>
+    </section>
+  </main>
+
+  <!-- GAME SETTINGS MODAL -->
+  <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-card">
+      <button id="closeSettingsBtn" class="modal-close" aria-label="Close settings">×</button>
+      <p class="eyebrow">PERSONALIZE YOUR RUN</p>
+      <h2 id="settingsTitle">Game settings</h2>
+      <p class="sub-copy">Choose how challenging your run should be.</p>
+      <div class="setting-row"><div><strong>Difficulty</strong><small>Obstacle speed and spawn rate</small></div>
+        <div class="difficulty-options">
+          <button class="difficulty-btn active" data-speed="slow" type="button"><span>🐢</span><strong>Slow</strong><small>Easy</small></button>
+          <button class="difficulty-btn" data-speed="medium" type="button"><span>⚡</span><strong>Medium</strong><small>Balanced</small></button>
+          <button class="difficulty-btn" data-speed="fast" type="button"><span>🔥</span><strong>Fast</strong><small>Hard</small></button>
+        </div>
+      </div>
+      <button id="settingsDoneBtn" class="btn btn-primary btn-wide">SAVE SETTINGS</button>
+    </div>
+  </div>
+
+  <!-- GAMEPLAY: FITS THE VIEWPORT -->
+  <main id="gameScreen" class="screen game-screen hidden">
+    <header class="game-topbar">
+      <button id="gameMenuBtn" class="text-button">← Main menu</button>
+      <div class="brand">NEON <span>RUNNER</span></div>
+      <div class="game-top-right"><span class="player-chip" id="gamePlayerName">PLAYER</span><button id="fullscreenBtn" class="icon-button" title="Toggle fullscreen">⛶</button></div>
+    </header>
+
+    <section class="game-hud">
+      <div><small>LEVEL</small><strong id="level">01</strong></div>
+      <div><small>SCORE</small><strong id="score">0000</strong></div>
+      <div><small>LIVES</small><strong id="lives">♥ ♥ ♥</strong></div>
+      <div class="hud-message" id="gameMessage">Enable your camera to begin.</div>
+      <button id="pauseBtn" class="btn btn-ghost" type="button" disabled>Ⅱ Pause</button>
+      <button id="restartBtn" class="btn btn-ghost" type="button">↻ Restart</button>
+    </section>
+
+    <section class="play-layout">
+      <!-- LEFT: EMOTION GUIDE -->
+      <aside class="control-rail">
+        <div class="rail-heading"><span class="rail-icon">✦</span><div><strong>EMOTION CONTROLS</strong><small>Make an expression to act</small></div></div>
+        <div class="control-list">
+          <div class="control-item"><span class="emotion-icon">😊</span><span><b>Happy</b><small>Move right</small></span><kbd>→</kbd></div>
+          <div class="control-item"><span class="emotion-icon">😢</span><span><b>Sad</b><small>Move left</small></span><kbd>←</kbd></div>
+          <div class="control-item"><span class="emotion-icon">😲</span><span><b>Surprise</b><small>Jump</small></span><kbd>↑</kbd></div>
+          <div class="control-item"><span class="emotion-icon">😠</span><span><b>Angry</b><small>Activate shield</small></span><kbd>S</kbd></div>
+          <div class="control-item"><span class="emotion-icon">😐</span><span><b>Neutral</b><small>Stay in place</small></span><kbd>•</kbd></div>
+          <div class="control-item"><span class="emotion-icon">😨</span><span><b>Fear</b><small>Move left</small></span><kbd>←</kbd></div>
+          <div class="control-item"><span class="emotion-icon">🤢</span><span><b>Disgust</b><small>Move right</small></span><kbd>→</kbd></div>
+        </div>
+        <div class="rail-tip"><strong>💡 Pro tip</strong><p>Hold your expression steadily. The AI checks multiple predictions before changing your control.</p></div>
+      </aside>
+
+      <!-- CENTER: GAME CANVAS -->
+      <section class="game-stage">
+        <div class="stage-label"><span>LIVE GAMEPLAY</span><span class="stage-live"><i></i> READY</span></div>
+        <div class="game-canvas-wrap">
+          <canvas id="gameCanvas" width="900" height="480"></canvas>
+          <div class="game-overlay" id="gameOverlay">
+            <div class="overlay-content">
+              <div class="overlay-icon">⚡</div>
+              <h2 id="overlayTitle">Ready to run?</h2>
+              <p id="overlayMessage">Enable your camera, then start your emotion-controlled adventure.</p>
+              <button id="startGameBtn" class="btn btn-primary" type="button">START RUN</button>
+            </div>
+          </div>
+        </div>
+        <div class="stage-bottom"><span>Use your facial expressions to control the runner</span><span>Keyboard fallback: ← → ↑ / SPACE · S</span></div>
+      </section>
+
+      <!-- RIGHT: CAMERA AND LIVE PREDICTION -->
+      <aside class="scanner-rail">
+        <div class="rail-heading"><span class="rail-icon">◉</span><div><strong>EMOTION SCANNER</strong><small>Live camera analysis</small></div><span class="scanner-indicator" id="scannerIndicator"></span></div>
+        <div class="video-wrapper">
+          <video id="cameraVideo" autoplay muted playsinline></video>
+          <div class="camera-placeholder" id="cameraPlaceholder"><span>◉</span><strong>Camera is off</strong><small>Enable camera to activate AI controls</small></div>
+        </div>
+        <button id="cameraBtn" class="btn btn-primary btn-wide camera-btn" type="button">ENABLE CAMERA</button>
+        <div class="connection-line" id="connectionStatus"><span class="status-dot"></span> Offline</div>
+        <div class="detection-block"><small class="section-label">LATEST CNN DETECTION</small><div class="emotion-value" id="emotionValue">Waiting...</div><div class="confidence-track"><div id="confidenceBar"></div></div><small id="confidenceText">0% confidence</small></div>
+        <div class="active-block"><small class="section-label">ACTIVE GAME CONTROL</small><div id="activeEmotion">😐 Neutral</div><small id="stabilityText">Waiting for stable predictions</small></div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+  <script src="menu.js"></script>
+</body>
+</html>

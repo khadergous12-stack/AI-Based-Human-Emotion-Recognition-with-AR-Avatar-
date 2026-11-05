@@ -1,0 +1,875 @@
+
+<!DOCTYPE html>
+<html lang="en" class="emotion-intro-pending">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080d19">
+
+    <meta name="description"
+          content="AI-Based Human Emotion Recognition and AR Intelligence Platform">
+
+    <title>EmotionAI | Intelligent Emotion Analysis</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+          rel="stylesheet">
+
+    <!-- Existing Dashboard Styles -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- New Three.js Welcome Screen Styles -->
+    <link rel="stylesheet" href="css/welcome-3d.css">
+
+    <!-- Prevent dashboard flash before the cinematic intro is mounted -->
+    <style>
+        html.emotion-intro-pending,
+        html.emotion-intro-pending body {
+            min-height: 100%;
+            background: #030914;
+        }
+        html.emotion-intro-pending body > .app-shell {
+            visibility: hidden !important;
+        }
+    </style>
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <!-- Existing Dashboard JavaScript -->
+    <script src="js/app.js" defer></script>
+
+</head>
+
+<body>
+
+    <!-- ==========================================
+         EXISTING EMOTION AI DASHBOARD
+    =========================================== -->
+
+    <div class="app-shell">
+
+        <!-- HEADER -->
+        <header class="topbar">
+
+            <a class="brand" href="#">
+
+                <span class="brand-mark">E</span>
+
+                <span class="brand-name">
+                    Emotion<span>AI</span>
+                </span>
+
+                <span class="brand-divider"></span>
+
+                <span class="brand-product">
+                    INTELLIGENCE PLATFORM
+                </span>
+
+            </a>
+
+            <div class="topbar-right">
+
+                <span class="system-indicator">
+                    <i class="status-dot"></i>
+                    <span id="systemStatus">System ready</span>
+                </span>
+
+                <span class="version-tag">
+                    CNN MODEL · V1.0
+                </span>
+
+            </div>
+
+        </header>
+
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- HERO SECTION -->
+            <section class="hero">
+
+                <div class="eyebrow">
+                    <span></span>
+                    COMPUTER VISION · DEEP LEARNING
+                </div>
+
+                <div class="hero-content">
+
+                    <div>
+
+                        <h1>
+                            Human Emotion<br>
+                            <span>Recognition System</span>
+                        </h1>
+
+                        <p>
+                            An intelligent facial expression analysis platform
+                            powered by a custom convolutional neural network
+                            and real-time computer vision.
+                        </p>
+
+                    </div>
+
+                    <div class="hero-side">
+
+                        <div class="hero-orbit">
+                            <span>AI</span>
+                            <i></i>
+                            <b></b>
+                        </div>
+
+                        <div class="hero-side-label">
+                            REAL-TIME<br>
+                            FACIAL ANALYTICS
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- SESSION METRICS -->
+            <section class="metric-grid" aria-label="Session metrics">
+
+                <article class="metric-card">
+
+                    <div class="metric-top">
+                        <span>SESSION STATUS</span>
+                        <span class="metric-icon">◉</span>
+                    </div>
+
+                    <div class="metric-value" id="sessionState">
+                        Standby
+                    </div>
+
+                    <div class="metric-foot">
+                        <span class="tiny-dot"></span>
+                        <span id="sessionHint">Waiting for input</span>
+                    </div>
+
+                </article>
+
+
+                <article class="metric-card">
+
+                    <div class="metric-top">
+                        <span>FRAMES ANALYSED</span>
+                        <span class="metric-icon">▦</span>
+                    </div>
+
+                    <div class="metric-value" id="framesAnalyzed">
+                        0
+                    </div>
+
+                    <div class="metric-foot">
+                        Current camera session
+                    </div>
+
+                </article>
+
+
+                <article class="metric-card">
+
+                    <div class="metric-top">
+                        <span>SESSION DURATION</span>
+                        <span class="metric-icon">◷</span>
+                    </div>
+
+                    <div class="metric-value" id="sessionDuration">
+                        00:00
+                    </div>
+
+                    <div class="metric-foot">
+                        Live analysis time
+                    </div>
+
+                </article>
+
+
+                <article class="metric-card">
+
+                    <div class="metric-top">
+                        <span>FACE TRACKING</span>
+                        <span class="metric-icon">◎</span>
+                    </div>
+
+                    <div class="metric-value small-value" id="trackingState">
+                        Inactive
+                    </div>
+
+                    <div class="metric-foot" id="trackingHint">
+                        Scanner on standby
+                    </div>
+
+                </article>
+
+            </section>
+
+
+            <!-- MAIN WORKSPACE -->
+            <section class="workspace">
+
+                <!-- INPUT PANEL -->
+                <article class="panel analysis-panel">
+
+                    <div class="panel-heading">
+
+                        <div class="heading-copy">
+
+                            <div class="section-kicker">
+                                01 / INPUT SOURCE
+                            </div>
+
+                            <h2>Live Analysis Workspace</h2>
+
+                            <p>
+                                Provide a facial image or activate the live camera.
+                            </p>
+
+                        </div>
+
+                        <span class="heading-symbol">⌘</span>
+
+                    </div>
+
+
+                    <!-- INPUT TABS -->
+                    <div class="tabs" role="tablist">
+
+                        <button class="tab active"
+                                id="uploadTab"
+                                role="tab"
+                                aria-selected="true">
+
+                            <span>▧</span>
+                            Image Analysis
+
+                        </button>
+
+                        <button class="tab"
+                                id="cameraTab"
+                                role="tab"
+                                aria-selected="false">
+
+                            <span>◉</span>
+                            Live Webcam
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- IMAGE UPLOAD SECTION -->
+                    <div id="uploadSection" class="detection-section">
+
+                        <label for="imageInput"
+                               class="upload-area"
+                               id="uploadArea">
+
+                            <span class="upload-graphic">↑</span>
+
+                            <strong>
+                                Upload a facial image
+                            </strong>
+
+                            <span class="upload-description">
+                                Drag and drop an image here, or browse your device.
+                            </span>
+
+                            <span class="upload-button">
+                                Choose image
+                            </span>
+
+                            <small>
+                                JPG · JPEG · PNG · WEBP · MAX 10 MB
+                            </small>
+
+                        </label>
+
+
+                        <input type="file"
+                               id="imageInput"
+                               accept="image/jpeg,image/png,image/webp"
+                               hidden>
+
+
+                        <div id="previewContainer"
+                             class="preview-container hidden">
+
+                            <div class="preview-topline">
+
+                                <span>SELECTED IMAGE</span>
+
+                                <button id="removeImage"
+                                        class="text-button">
+                                    Remove image ×
+                                </button>
+
+                            </div>
+
+                            <img id="imagePreview"
+                                 alt="Selected face photograph">
+
+                        </div>
+
+
+                        <button id="predictButton"
+                                class="primary-button"
+                                disabled>
+
+                            <span>Analyze emotion</span>
+                            <span>→</span>
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- LIVE CAMERA SECTION -->
+                    <div id="cameraSection"
+                         class="detection-section hidden">
+
+                        <div class="camera-toolbar">
+
+                            <span class="camera-live-label">
+                                <i class="status-dot"></i>
+                                LIVE CAMERA FEED
+                            </span>
+
+                            <span class="camera-resolution">
+                                640 × 480 · FRONT CAMERA
+                            </span>
+
+                        </div>
+
+
+                        <div class="camera-frame">
+
+                            <video id="webcam"
+                                   autoplay
+                                   playsinline
+                                   muted>
+                            </video>
+
+                            <!-- Existing MediaPipe Facial Mesh Overlay -->
+                            <canvas id="faceOverlay"
+                                    class="face-overlay">
+                            </canvas>
+
+
+                            <div class="camera-placeholder"
+                                 id="cameraPlaceholder">
+
+                                <div class="placeholder-icon">◎</div>
+
+                                <strong>Camera preview</strong>
+
+                                <span>
+                                    Start your camera to begin facial analysis
+                                </span>
+
+                            </div>
+
+
+                            <div class="camera-corner corner-tl"></div>
+                            <div class="camera-corner corner-tr"></div>
+                            <div class="camera-corner corner-bl"></div>
+                            <div class="camera-corner corner-br"></div>
+
+
+                            <div class="camera-overlay-label">
+                                <i></i>
+                                AI FACE TRACKING
+                            </div>
+
+
+                            <div class="camera-bottom-label"
+                                 id="overlayStatus">
+                                WAITING FOR CAMERA
+                            </div>
+
+                        </div>
+
+
+                        <!-- CAMERA CONTROLS -->
+                        <div class="camera-controls">
+
+                            <button id="startCamera"
+                                    class="primary-button">
+
+                                <span>Start camera</span>
+                                <span>→</span>
+
+                            </button>
+
+                            <button id="stopCamera"
+                                    class="secondary-button"
+                                    disabled>
+
+                                Stop camera
+
+                            </button>
+
+                        </div>
+
+
+                        <div class="camera-status-line">
+
+                            <span class="status-pulse"></span>
+
+                            <span id="cameraStatus">
+                                Camera is currently stopped.
+                            </span>
+
+                        </div>
+
+
+                        <canvas id="captureCanvas" hidden></canvas>
+
+                    </div>
+
+
+                    <!-- ERROR AND LOADING MESSAGES -->
+                    <div id="errorMessage"
+                         class="error-message hidden"
+                         role="alert">
+                    </div>
+
+
+                    <div id="loadingMessage"
+                         class="loading-message hidden">
+
+                        <span class="spinner"></span>
+                        Analysing facial expression...
+
+                    </div>
+
+
+                    <div class="workspace-note">
+
+                        <span class="note-icon">ⓘ</span>
+
+                        <p>
+                            Position your face in good lighting and look
+                            towards the camera for more consistent results.
+                        </p>
+
+                    </div>
+
+                </article>
+
+
+                <!-- RESULTS PANEL -->
+                <article class="panel results-panel">
+
+                    <div class="panel-heading">
+
+                        <div class="heading-copy">
+
+                            <div class="section-kicker">
+                                02 / MODEL OUTPUT
+                            </div>
+
+                            <h2>Emotion Intelligence</h2>
+
+                            <p>
+                                Classification results from the trained CNN model.
+                            </p>
+
+                        </div>
+
+                        <span class="heading-symbol accent-symbol">✧</span>
+
+                    </div>
+
+
+                    <!-- EMPTY RESULT STATE -->
+                    <div id="emptyResult" class="empty-result">
+
+                        <div class="empty-visual">
+
+                            <span>AI</span>
+                            <i></i>
+                            <b></b>
+
+                        </div>
+
+                        <h3>Awaiting model input</h3>
+
+                        <p>
+                            Start a live camera session or upload an image
+                            to generate an emotion analysis.
+                        </p>
+
+                        <div class="empty-tags">
+
+                            <span>7 EMOTION CLASSES</span>
+                            <span>CUSTOM CNN</span>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- PREDICTION RESULTS -->
+                    <div id="predictionResult" class="hidden">
+
+                        <div class="prediction-card">
+
+                            <div class="prediction-card-top">
+
+                                <span>DETECTED EXPRESSION</span>
+
+                                <span class="live-result-tag">
+                                    MODEL OUTPUT
+                                </span>
+
+                            </div>
+
+
+                            <div class="emotion-display">
+
+                                <span id="emotionEmoji"
+                                      class="emotion-emoji">
+                                    😐
+                                </span>
+
+                                <div class="emotion-copy">
+
+                                    <h2 id="emotionName">
+                                        Neutral
+                                    </h2>
+
+                                    <p id="confidenceText">
+                                        0% confidence
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="confidence-meta">
+
+                                <span>CONFIDENCE SCORE</span>
+
+                                <strong id="confidenceValue">
+                                    0%
+                                </strong>
+
+                            </div>
+
+
+                            <div class="confidence-track">
+
+                                <div id="confidenceBar"
+                                     class="confidence-fill">
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- PROBABILITY DISTRIBUTION -->
+                        <div class="probability-section">
+
+                            <div class="subsection-heading">
+
+                                <div>
+
+                                    <span class="section-kicker">
+                                        CLASS DISTRIBUTION
+                                    </span>
+
+                                    <h3>Emotion probabilities</h3>
+
+                                </div>
+
+                                <span class="distribution-badge">
+                                    7 CLASSES
+                                </span>
+
+                            </div>
+
+                            <div id="probabilityBars"></div>
+
+                        </div>
+
+
+                        <!-- FACE INFORMATION -->
+                        <div class="face-info">
+
+                            <div class="subsection-heading">
+
+                                <div>
+
+                                    <span class="section-kicker">
+                                        COMPUTER VISION
+                                    </span>
+
+                                    <h3>Face detection details</h3>
+
+                                </div>
+
+                                <span class="face-detected-tag"
+                                      id="faceDetectedTag">
+                                    ● DETECTED
+                                </span>
+
+                            </div>
+
+                            <p id="faceCoordinates">
+                                No face information available.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+            </section>
+
+
+            <!-- LOWER DASHBOARD SECTIONS -->
+            <section class="lower-grid">
+
+                <!-- ANALYSIS PIPELINE -->
+                <article class="panel process-panel">
+
+                    <div class="lower-heading">
+
+                        <div>
+
+                            <div class="section-kicker">
+                                03 / SYSTEM WORKFLOW
+                            </div>
+
+                            <h2>Analysis Pipeline</h2>
+
+                        </div>
+
+                        <span class="heading-symbol">⌁</span>
+
+                    </div>
+
+
+                    <div class="pipeline">
+
+                        <div class="pipeline-step">
+
+                            <div class="pipeline-icon">◎</div>
+
+                            <div>
+
+                                <strong>Face Detection</strong>
+
+                                <p>
+                                    OpenCV identifies and extracts the facial region.
+                                </p>
+
+                            </div>
+
+                            <span class="step-index">01</span>
+
+                        </div>
+
+
+                        <div class="pipeline-connector"></div>
+
+
+                        <div class="pipeline-step">
+
+                            <div class="pipeline-icon">▦</div>
+
+                            <div>
+
+                                <strong>Image Preprocessing</strong>
+
+                                <p>
+                                    Face image is resized and normalized for inference.
+                                </p>
+
+                            </div>
+
+                            <span class="step-index">02</span>
+
+                        </div>
+
+
+                        <div class="pipeline-connector"></div>
+
+
+                        <div class="pipeline-step">
+
+                            <div class="pipeline-icon">⌘</div>
+
+                            <div>
+
+                                <strong>CNN Classification</strong>
+
+                                <p>
+                                    Custom CNN estimates seven emotion probabilities.
+                                </p>
+
+                            </div>
+
+                            <span class="step-index">03</span>
+
+                        </div>
+
+
+                        <div class="pipeline-connector"></div>
+
+
+                        <div class="pipeline-step">
+
+                            <div class="pipeline-icon">✧</div>
+
+                            <div>
+
+                                <strong>Result Visualization</strong>
+
+                                <p>
+                                    Prediction and probability distribution are displayed.
+                                </p>
+
+                            </div>
+
+                            <span class="step-index">04</span>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+                <!-- MODEL INFORMATION -->
+                <article class="panel model-panel">
+
+                    <div class="lower-heading">
+
+                        <div>
+
+                            <div class="section-kicker">
+                                04 / MODEL INFORMATION
+                            </div>
+
+                            <h2>System Configuration</h2>
+
+                        </div>
+
+                        <span class="heading-symbol">⚙</span>
+
+                    </div>
+
+
+                    <div class="config-list">
+
+                        <div>
+                            <span>Classification model</span>
+                            <strong>Custom CNN</strong>
+                        </div>
+
+                        <div>
+                            <span>Emotion categories</span>
+                            <strong>7 classes</strong>
+                        </div>
+
+                        <div>
+                            <span>Input image size</span>
+                            <strong>48 × 48 px</strong>
+                        </div>
+
+                        <div>
+                            <span>Face detection</span>
+                            <strong>OpenCV</strong>
+                        </div>
+
+                        <div>
+                            <span>Backend framework</span>
+                            <strong>FastAPI</strong>
+                        </div>
+
+                        <div>
+                            <span>Deep learning</span>
+                            <strong>TensorFlow / Keras</strong>
+                        </div>
+
+                    </div>
+
+
+                    <div class="model-footnote">
+
+                        <span class="tiny-dot"></span>
+
+                        Model inference is performed by the connected backend service.
+
+                    </div>
+
+                </article>
+
+            </section>
+
+
+            <!-- DISCLAIMER -->
+            <section class="disclaimer">
+
+                <span>ⓘ</span>
+
+                <p>
+                    Emotion predictions are model-based estimates from facial
+                    expressions. They should not be treated as definitive
+                    measurements of a person's internal emotional state.
+                </p>
+
+            </section>
+
+        </main>
+
+
+        <!-- FOOTER -->
+        <footer class="footer">
+
+            <div class="footer-brand">
+                Emotion<span>AI</span>
+            </div>
+
+            <p>
+                AI-Based Human Emotion Recognition with AR Avatar
+            </p>
+
+            <span>
+                POWERED BY DEEP LEARNING & COMPUTER VISION
+            </span>
+
+        </footer>
+
+    </div>
+
+
+    <!-- ==========================================
+         THREE.JS CINEMATIC WELCOME EXPERIENCE
+    =========================================== -->
+
+    <script type="module" src="js/welcome-3d.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,31 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Environment variables
+.env
+
+# Model files
+*.h5
+*.keras
+*.pkl
+*.joblib
+
+# Dataset files
+datasets/raw/*
+datasets/processed/*
+
+# Generated files
+outputs/*
+
+# IDE
+.vscode/
+.idea/
+
+# Unity generated folders
+unity/**/Library/
+unity/**/Temp/
+unity/**/Obj/
+unity/**/Logs/

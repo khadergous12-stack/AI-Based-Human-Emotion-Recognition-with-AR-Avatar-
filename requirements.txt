@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+opencv-python
+numpy<2
+pillow
+python-multipart
+pydantic
+pytest
+httpx
